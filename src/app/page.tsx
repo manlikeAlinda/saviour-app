@@ -48,6 +48,8 @@ const categoryIcons: Record<string, React.ReactNode> = {
   tools: <Wrench className="h-7 w-7" />,
 };
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Saviour Mechatronics | Electronics & Automation Components",
   description:
