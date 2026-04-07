@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 interface Profile { fullName: string; email: string; phone: string | null }
 
 export default function ProfilePage() {
-  const { status } = useSession();
+  const status = useSession()?.status ?? "loading";
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [form, setForm] = useState({ fullName: "", phone: "", currentPassword: "", newPassword: "" });

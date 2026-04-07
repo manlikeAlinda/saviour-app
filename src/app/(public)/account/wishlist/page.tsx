@@ -30,7 +30,7 @@ interface WishlistItem {
 }
 
 export default function WishlistPage() {
-  const { status } = useSession();
+  const status = useSession()?.status ?? "loading";
   const router = useRouter();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
