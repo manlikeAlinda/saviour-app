@@ -1,0 +1,230 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  imageUrl    String?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Brand {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  slug        String    @unique
+  logoUrl     String?
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  id                   Int                    @id @default(autoincrement())
+  categoryId           Int
+  brandId              Int?
+  name                 String
+  slug                 String                 @unique
+  sku                  String                 @unique
+  shortDescription     String?
+  fullDescription      String?
+  technicalSummary     String?
+  price                Float?
+  priceVisibilityMode  String                 @default("show_exact_price")
+  stockStatus          String                 @default("in_stock")
+  stockQuantity        Int?
+  minimumOrderQuantity Int                    @default(1)
+  unitOfMeasure        String                 @default("pcs")
+  imageUrl             String?
+  galleryJson          String?
+  datasheetUrl         String?
+  isFeatured           Boolean                @default(false)
+  isActive             Boolean                @default(true)
+  weightGrams          Float?
+  metaTitle            String?
+  metaDescription      String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  category             Category               @relation(fields: [categoryId], references: [id])
+  brand                Brand?                 @relation(fields: [brandId], references: [id])
+  specifications       ProductSpecification[]
+  relatedFrom          ProductRelatedItem[]   @relation("ProductFrom")
+  relatedTo            ProductRelatedItem[]   @relation("ProductTo")
+  inquiryItems         InquiryItem[]
+  reviews              Review[]
+  wishlistItems        WishlistItem[]
+
+  @@map("products")
+}
+
+model ProductSpecification {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  specName  String
+  specValue String
+  specUnit  String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_specifications")
+}
+
+model ProductRelatedItem {
+  id               Int      @id @default(autoincrement())
+  productId        Int
+  relatedProductId Int
+  relationType     String   @default("similar_item")
+  createdAt        DateTime @default(now())
+  product          Product  @relation("ProductFrom", fields: [productId], references: [id], onDelete: Cascade)
+  relatedProduct   Product  @relation("ProductTo", fields: [relatedProductId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, relatedProductId])
+  @@map("product_related_items")
+}
+
+model Inquiry {
+  id                      Int           @id @default(autoincrement())
+  inquiryReference        String        @unique
+  customerName            String
+  customerPhone           String
+  customerEmail           String?
+  deliveryLocation        String
+  deliveryMethod          String
+  inquiryNotes            String?
+  whatsappMessageSnapshot String
+  subtotalAmount          Float?
+  deliveryFeeEstimate     Float?
+  totalEstimate           Float?
+  couponCode              String?
+  discountAmount          Float?
+  status                  String        @default("new")
+  sourceChannel           String        @default("website_whatsapp_checkout")
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  items                   InquiryItem[]
+
+  @@map("inquiries")
+}
+
+model InquiryItem {
+  id                  Int      @id @default(autoincrement())
+  inquiryId           Int
+  productId           Int?
+  productNameSnapshot String
+  skuSnapshot         String
+  priceSnapshot       Float?
+  quantity            Int
+  stockStatusSnapshot String?
+  note                String?
+  createdAt           DateTime @default(now())
+  inquiry             Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  product             Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@map("inquiry_items")
+}
+
+model AdminUser {
+  id           Int        @id @default(autoincrement())
+  fullName     String
+  email        String     @unique
+  passwordHash String
+  role         String     @default("sales_agent")
+  isActive     Boolean    @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  auditLogs    AuditLog[]
+
+  @@map("admin_users")
+}
+
+model AuditLog {
+  id            Int       @id @default(autoincrement())
+  adminUserId   Int
+  action        String
+  entityType    String
+  entityId      String
+  previousState String?
+  newState      String?
+  createdAt     DateTime  @default(now())
+  adminUser     AdminUser @relation(fields: [adminUserId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model Customer {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  passwordHash  String
+  fullName      String
+  phone         String?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  reviews       Review[]
+  wishlistItems WishlistItem[]
+
+  @@map("customers")
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customerId Int
+  customer   Customer @relation(fields: [customerId], references: [id])
+  rating     Int
+  title      String?
+  comment    String
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId])
+  @@map("reviews")
+}
+
+model WishlistItem {
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId])
+  @@map("wishlist_items")
+}
+
+model Coupon {
+  id             Int       @id @default(autoincrement())
+  code           String    @unique
+  discountType   String
+  discountValue  Float
+  minOrderAmount Float?
+  maxUsage       Int?
+  usageCount     Int       @default(0)
+  expiresAt      DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  @@map("coupons")
+}
